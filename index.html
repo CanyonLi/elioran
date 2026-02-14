@@ -32,9 +32,7 @@
   <script>
     // =========================================================
     // canyon.png background (cover) + permanent dark overlay
-    // + countdown under Canyon 💗 Elioran
-    // ✅ Countdown fades in SLOWLY and smoothly
-    // Target fixed to China time: 2026-06-20 AM (UTC+8)
+    // ✅ Countdown REMOVED (no countdown logic, no drawing)
     // =========================================================
 
     // ---------- helpers ----------
@@ -153,50 +151,6 @@
     let textBox = { left: 0, top: 0, right: 0, bottom: 0 };
     let textFormed = false;
     let heartStarted = false;
-
-    // =========================================================
-    // ✅ Countdown (China time)
-    // =========================================================
-    const TARGET_YEAR_CN = 2026;
-    const TARGET_MONTH_CN = 6;
-    const TARGET_DAY_CN = 20;
-    const TARGET_HOUR_CN = 9;   // 9 AM Beijing time (change if needed)
-    const TARGET_MIN_CN  = 0;
-    const TARGET_SEC_CN  = 0;
-
-    // Convert CN local time -> UTC moment (UTC = CN - 8h)
-    const MEET_TARGET = new Date(Date.UTC(
-      TARGET_YEAR_CN,
-      TARGET_MONTH_CN - 1,
-      TARGET_DAY_CN,
-      TARGET_HOUR_CN - 8,
-      TARGET_MIN_CN,
-      TARGET_SEC_CN
-    ));
-
-    function pad2(n) { return String(n).padStart(2, "0"); }
-
-    function countdownString() {
-      let diff = MEET_TARGET.getTime() - Date.now();
-      if (diff < 0) diff = 0;
-
-      const totalSeconds = Math.floor(diff / 1000);
-      const days = Math.floor(totalSeconds / 86400);
-      const hours = Math.floor((totalSeconds % 86400) / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-
-      return `${days} days, ${hours} hours, ${minutes} minutes, ${pad2(seconds)} seconds until we meet`;
-    }
-
-    // =========================================================
-    // ✅ Slow countdown fade controls
-    // =========================================================
-    const COUNTDOWN_FADE_MS = 8500;     // slower fade (8.5s). increase for even slower
-    const COUNTDOWN_GATE_START = 0.92;  // start later (92% formed)
-    const COUNTDOWN_GATE_END   = 0.995;
-
-    let countdownAppearAt = null;
 
     // ---------- classes ----------
     class Shard {
@@ -431,7 +385,6 @@
       textFormed = false;
       heartStarted = false;
       fireflies.length = 0;
-      countdownAppearAt = null;
 
       fidelity = (W() < 500) ? 6 : 4;
       heartPointCount = (W() < 500) ? 190 : 280;
@@ -571,9 +524,6 @@
     window.addEventListener("orientationchange", resize);
 
     // ---------- render glow layer ----------
-    let lastSec = -1;
-    let cachedCountdown = countdownString();
-
     function renderGlow(now) {
       ctx3.clearRect(0, 0, W(), H());
 
@@ -595,43 +545,6 @@
       // Heart fireflies
       for (let i = 0; i < fireflies.length; i++) {
         fireflies[i].draw(now);
-      }
-
-      // Countdown: update once per second
-      const sec = Math.floor(Date.now() / 1000);
-      if (sec !== lastSec) {
-        lastSec = sec;
-        cachedCountdown = countdownString();
-      }
-
-      // Fade-in alpha (slow)
-      const progress = 1 - (targets.length / totalTargets);
-      const pGateRaw = clamp01((progress - COUNTDOWN_GATE_START) / (COUNTDOWN_GATE_END - COUNTDOWN_GATE_START));
-      const pGate = easeInOut(pGateRaw);
-
-      let tGate = 0;
-      if (countdownAppearAt != null) {
-        tGate = easeInOut(clamp01((now - countdownAppearAt) / COUNTDOWN_FADE_MS));
-      }
-
-      const alpha = Math.max(pGate, tGate) * 0.98;
-
-      if (alpha > 0.001) {
-        const cx = (textBox.left + textBox.right) / 2;
-        const fs = Math.max(14, Math.floor(fontSize * 0.32));
-        const baseY = textBox.bottom + Math.max(26, fontSize * 0.22);
-        const y = baseY + (1 - alpha) * 18;
-
-        ctx3.save();
-        ctx3.font = `600 ${fs}px ${FONT_FAMILY}`;
-        ctx3.textAlign = "center";
-        ctx3.textBaseline = "top";
-        ctx3.fillStyle = TEXT_FILL;
-        ctx3.shadowColor = TEXT_GLOW;
-        ctx3.shadowBlur = Math.max(18, TEXT_GLOW_BLUR * 0.55);
-        ctx3.globalAlpha = alpha;
-        ctx3.fillText(cachedCountdown, cx, y);
-        ctx3.restore();
       }
     }
 
@@ -682,7 +595,6 @@
         const progress = 1 - (targets.length / totalTargets);
         if (progress > 0.995 && shards.length < (mobile ? 16 : 24)) {
           textFormed = true;
-          if (countdownAppearAt == null) countdownAppearAt = now; // start slow fade timer
         }
       }
 
